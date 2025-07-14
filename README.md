@@ -238,10 +238,6 @@ If you encounter any issues:
 
 ---
 
-**Made with ❤️ for the CKAN community**
-
----
-
 ## Türkçe
 
 CKAN kullanıcılarının veri istekleri göndermesine ve yöneticilerin bunları web arayüzü üzerinden yönetmesine olanak sağlayan bir CKAN eklentisidir.
