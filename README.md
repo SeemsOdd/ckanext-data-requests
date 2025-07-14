@@ -221,23 +221,6 @@ docker ps
 
 This project is licensed under the AGPL-3.0 License.
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## 📞 Support
-
-If you encounter any issues:
-
-1. Check the [troubleshooting section](#-troubleshooting)
-2. Review CKAN logs: `docker logs your-ckan-container`
-3. Open an issue on GitHub
-
----
-
 ## Türkçe
 
 CKAN kullanıcılarının veri istekleri göndermesine ve yöneticilerin bunları web arayüzü üzerinden yönetmesine olanak sağlayan bir CKAN eklentisidir.
@@ -454,20 +437,3 @@ docker ps
 ## 📝 Lisans
 
 Bu proje AGPL-3.0 Lisansı altında lisanslanmıştır.
-
-## 🤝 Katkıda Bulunma
-
-1. Repository'yi fork edin
-2. Özellik dalı oluşturun
-3. Değişikliklerinizi yapın
-4. Pull request gönderin
-
-## 📞 Destek
-
-Herhangi bir sorunla karşılaşırsanız:
-
-1. [Sorun giderme bölümünü](#-sorun-giderme) kontrol edin
-2. CKAN loglarını inceleyin: `docker logs ckan-container-adınız`
-3. GitHub'da issue açın
-
----
