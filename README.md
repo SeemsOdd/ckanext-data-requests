@@ -1,123 +1,233 @@
-[![Tests](https://github.com/SeemsOdd/ckanext-data-requests/workflows/Tests/badge.svg?branch=main)](https://github.com/SeemsOdd/ckanext-data-requests/actions)
+# CKAN Data Requests Extension
 
-# ckanext-data-requests
+A CKAN extension that allows users to submit data requests and administrators to manage them through a web interface.
 
-**TODO:** Put a description of your extension here:  What does it do? What features does it have? Consider including some screenshots or embedding a video!
+## 🚀 Features
 
+- ✅ **User-friendly interface** for submitting data requests
+- ✅ **Organization-based filtering** and categorization
+- ✅ **Admin panel** for managing requests (approve, reject, respond)
+- ✅ **Status tracking** (pending, completed, rejected)
+- ✅ **Automatic database setup** with proper permissions
+- ✅ **Responsive design** that fits CKAN's theme
+- ✅ **Performance optimized** with database indexes
 
-## Requirements
+## 📋 Requirements
 
-**TODO:** For example, you might want to mention here which versions of CKAN this
-extension works with.
+- CKAN 2.8+
+- PostgreSQL
+- Python 3.7+
 
-If your extension works across different versions you can add the following table:
+## 🛠️ Installation
 
-Compatibility with core CKAN versions:
+### Step 1: Clone the Extension
 
-| CKAN version    | Compatible?   |
-| --------------- | ------------- |
-| 2.6 and earlier | not tested    |
-| 2.7             | not tested    |
-| 2.8             | not tested    |
-| 2.9             | not tested    |
+Navigate to your CKAN extensions directory and clone the repository:
 
-Suggested values:
+```bash
+# For Docker environments (typical path)
+cd /srv/app/src
 
-* "yes"
-* "not tested" - I can't think of a reason why it wouldn't work
-* "not yet" - there is an intention to get it working
-* "no"
+# For source installations
+cd /usr/lib/ckan/default/src
 
+# Clone the extension
+git clone https://github.com/SeemsOdd/ckanext-data-requests.git
+```
 
-## Installation
+### Step 2: Install the Extension
 
-**TODO:** Add any additional install steps to the list below.
-   For example installing any non-Python dependencies or adding any required
-   config settings.
+```bash
+# Navigate to the extension directory
+cd ckanext-data-requests
 
-To install ckanext-data-requests:
+# Install the extension
+pip install -e .
+```
 
-1. Activate your CKAN virtual environment, for example:
+### Step 3: Create Database Table
 
-     . /usr/lib/ckan/default/bin/activate
+#### For Docker Environments:
 
-2. Clone the source and install it on the virtualenv
+```bash
+# Access your database container (replace 'your-db-container-name' with your actual container name)
+docker exec -it your-db-container-name bash
 
-    git clone https://github.com/SeemsOdd/ckanext-data-requests.git
-    cd ckanext-data-requests
-    pip install -e .
-	pip install -r requirements.txt
+# Connect to the datastore database
+psql -U postgres -d datastore
+```
 
-3. Add `data-requests` to the `ckan.plugins` setting in your CKAN
-   config file (by default the config file is located at
-   `/etc/ckan/default/ckan.ini`).
+#### For Source Installations:
 
-4. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu:
+```bash
+# Connect directly to PostgreSQL
+sudo -u postgres psql -d datastore
+```
 
-     sudo service apache2 reload
+#### Run the following SQL commands:
 
+**⚠️ IMPORTANT:** Replace `X` and `Y` in the GRANT commands with your actual database users from your `.env` file:
+- `X` = Your write user (e.g., `ckandbuser`, `ckan_default`)
+- `Y` = Your read-only user (e.g., `datastore_ro`)
 
-## Config settings
+```sql
+-- Create the main table
+CREATE TABLE data_requests (
+    _id SERIAL PRIMARY KEY,
+    id INTEGER,
+    user_id TEXT,
+    username TEXT,
+    title TEXT,
+    organization_id TEXT,
+    organization_name VARCHAR(200),
+    request_date TIMESTAMP WITHOUT TIME ZONE,
+    request_text TEXT,
+    is_active BOOLEAN DEFAULT FALSE,
+    status VARCHAR(20) DEFAULT 'pending',
+    admin_response TEXT,
+    response_date TIMESTAMP WITHOUT TIME ZONE,
+    responded_by TEXT
+);
 
-None at present
+-- Grant permissions (REPLACE X and Y with your actual users!)
+GRANT ALL PRIVILEGES ON TABLE data_requests TO X;
+GRANT ALL PRIVILEGES ON SEQUENCE data_requests__id_seq TO X;
+GRANT SELECT ON TABLE data_requests TO Y;
 
-**TODO:** Document any optional config settings here. For example:
+-- Create indexes for better performance
+CREATE INDEX idx_data_requests_active ON data_requests(is_active);
+CREATE INDEX idx_data_requests_status ON data_requests(status);
+CREATE INDEX idx_data_requests_org ON data_requests(organization_id);
+CREATE INDEX idx_data_requests_user ON data_requests(user_id);
+CREATE INDEX idx_data_requests_date ON data_requests(request_date);
+```
 
-	# The minimum number of hours to wait before re-checking a resource
-	# (optional, default: 24).
-	ckanext.data_requests.some_setting = some_default_value
+Exit PostgreSQL:
+```sql
+\q
+```
 
+### Step 4: Update CKAN Configuration
 
-## Developer installation
+Edit your CKAN configuration file:
 
-To install ckanext-data-requests for development, activate your CKAN virtualenv and
-do:
+#### For Docker:
+```bash
+# Typical Docker path
+nano /srv/app/ckan.ini
+```
 
-    git clone https://github.com/SeemsOdd/ckanext-data-requests.git
-    cd ckanext-data-requests
-    pip install -e .
-    pip install -r dev-requirements.txt
+#### For Source Installation:
+```bash
+# Typical source installation path
+nano /etc/ckan/default/ckan.ini
+```
 
+Add `data_requests` to the plugins list:
+```ini
+ckan.plugins = datastore datapusher ... data_requests
+```
 
-## Tests
+### Step 5: Restart CKAN
 
-To run the tests, do:
+#### For Docker:
+```bash
+# From your project directory
+docker compose restart
+```
 
-    pytest --ckan-ini=test.ini
+#### For Source Installation:
+```bash
+sudo systemctl restart ckan
+# or
+sudo service ckan restart
+```
 
+## 🎯 Usage
 
-## Releasing a new version of ckanext-data-requests
+After installation, you can access:
 
-If ckanext-data-requests should be available on PyPI you can follow these steps to publish a new version:
+- **Main page**: `http://your-ckan-site.com/data-requests`
+- **Create request**: `http://your-ckan-site.com/data-requests/create`
+- **Admin panel**: `http://your-ckan-site.com/data-requests/admin` (sysadmin only)
 
-1. Update the version number in the `pyproject.toml` file. See [PEP 440](http://legacy.python.org/dev/peps/pep-0440/#public-version-identifiers) for how to choose version numbers.
+## 🔧 Configuration
 
-2. Make sure you have the latest version of necessary packages:
+### Database User Examples
 
-    pip install --upgrade setuptools wheel twine
+Common `.env` file configurations:
 
-3. Create a source and binary distributions of the new version:
+```env
+# Example 1: Standard Docker setup
+CKAN_DB_USER=ckandbuser          # Use this for X
+DATASTORE_READONLY_USER=datastore_ro  # Use this for Y
 
-       python -m build && twine check dist/*
+# Example 2: Alternative setup
+CKAN_DB_USER=ckan_default        # Use this for X
+DATASTORE_READONLY_USER=datastore_ro  # Use this for Y
+```
 
-   Fix any errors you get.
+### Finding Your Database Users
 
-4. Upload the source distribution to PyPI:
+Check your `.env` file or CKAN configuration:
 
-       twine upload dist/*
+```bash
+# Check .env file
+cat .env | grep -i user
 
-5. Commit any outstanding changes:
+# Check CKAN config
+grep -E "(datastore|sqlalchemy)" /path/to/your/ckan.ini
+```
 
-       git commit -a
-       git push
+## 🐛 Troubleshooting
 
-6. Tag the new release of the project on GitHub with the version number from
-   the `setup.py` file. For example if the version number in `setup.py` is
-   0.0.1 then do:
+### Plugin Not Loading
+```bash
+# Check if plugin is in the list
+grep "ckan.plugins" /path/to/your/ckan.ini
 
-       git tag 0.0.1
-       git push --tags
+# Check Python import
+python -c "import ckanext.data_requests.plugin; print('OK')"
+```
 
-## License
+### Database Connection Issues
+```bash
+# Test database connection
+psql -U your_user -d datastore -h your_host
 
-[AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
+# Check permissions
+psql -U your_user -d datastore -c "SELECT * FROM data_requests LIMIT 1;"
+```
+
+### Docker Container Names
+```bash
+# List running containers
+docker ps
+
+# Common database container names:
+# - db
+# - postgres
+# - ckan-db-1
+# - your-project-name_db_1
+```
+
+## 📝 License
+
+This project is licensed under the AGPL-3.0 License.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📞 Support
+
+If you encounter any issues:
+
+1. Check the [troubleshooting section](#-troubleshooting)
+2. Review CKAN logs: `docker logs your-ckan-container`
+3. Open an issue on GitHub
+
+---
