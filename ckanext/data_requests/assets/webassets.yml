@@ -1,0 +1,14 @@
+# data_requests-js:
+#   filter: rjsmin
+#   output: ckanext-data_requests/%(version)s-data_requests.js
+#   contents:
+#     - js/data_requests.js
+#   extra:
+#     preload:
+#       - base/main
+
+# data_requests-css:
+#   filter: cssrewrite
+#   output: ckanext-data_requests/%(version)s-data_requests.css
+#   contents:
+#     - css/data_requests.css

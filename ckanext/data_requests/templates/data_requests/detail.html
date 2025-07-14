@@ -1,0 +1,165 @@
+{% extends "page.html" %}
+
+{% block subtitle %}{{ request.title or 'Veri İsteği Detayı' }}{% endblock %}
+
+{% block breadcrumb_content %}
+  <li>{% link_for _('Ana Sayfa'), named_route='home.index' %}</li>
+  <li>{% link_for _('Veri İstekleri'), named_route='data_requests.index' %}</li>
+  <li class="active">{{ request.title or _('Veri İsteği Detayı') }}</li>
+{% endblock %}
+
+{% block primary_content %}
+<div style="margin-bottom: 20px;">
+  <a href="{{ url_for('data_requests.index') }}" style="color: #0066cc; text-decoration: none;">
+    ← Veri İstekleri Listesine Dön
+  </a>
+</div>
+
+<div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+  
+  <!-- Başlık ve Meta Bilgiler -->
+  <div style="border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 25px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div style="flex: 1;">
+        <h1 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 28px; font-weight: bold;">
+          {{ request.title or 'Başlıksız Veri İsteği' }}
+        </h1>
+        
+        <!-- Durum etiketi -->
+        <div style="margin-bottom: 15px;">
+          {% if request.status == 'pending' %}
+            <span style="background: linear-gradient(135deg, #ffc107, #ffb300); color: #000; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; display: inline-block;">
+              📋 Beklemede
+            </span>
+          {% elif request.status == 'reviewing' %}
+            <span style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; display: inline-block;">
+              🔍 İnceleniyor
+            </span>
+          {% elif request.status == 'completed' %}
+            <span style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; display: inline-block;">
+              ✅ Tamamlandı
+            </span>
+          {% elif request.status == 'rejected' %}
+            <span style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; display: inline-block;">
+              ❌ Reddedildi
+            </span>
+          {% endif %}
+        </div>
+        
+        <!-- Meta bilgiler -->
+        <div style="color: #6c757d; font-size: 14px;">
+          <div style="margin-bottom: 5px;">
+            <strong>İsteyen:</strong> {{ request.username }}
+          </div>
+          {% if request.organization %}
+          <div style="margin-bottom: 5px;">
+            <strong>Hedef Birim:</strong> {{ request.organization }}
+          </div>
+          {% endif %}
+          <div style="margin-bottom: 5px;">
+            <strong>Tarih:</strong> {{ request.request_date.strftime('%d %B %Y, %H:%M') if request.request_date else 'Bilinmiyor' }}
+          </div>
+          <div>
+            <strong>İstek ID:</strong> #{{ request._id }}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Aktif/Pasif durumu -->
+      <div style="text-align: right;">
+        {% if request.is_active %}
+          <span style="background: #28a745; color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+            ✓ Aktif
+          </span>
+        {% else %}
+          <span style="background: #6c757d; color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+            ○ Pasif
+          </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Veri İsteği İçeriği -->
+  <div style="margin-bottom: 30px;">
+    <h3 style="color: #495057; margin-bottom: 15px; font-size: 20px;">
+      📝 İstek Detayı
+    </h3>
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #0066cc; line-height: 1.6; font-size: 16px;">
+      {{ request.request_text | replace('\n', '<br>') | safe }}
+    </div>
+  </div>
+  
+  <!-- Admin Yanıtı -->
+  {% if request.admin_response %}
+  <div style="margin-bottom: 30px;">
+    <h3 style="color: #495057; margin-bottom: 15px; font-size: 20px;">
+      💬 Admin Yanıtı
+    </h3>
+    <div style="background: linear-gradient(135deg, #e8f5e8, #f0f8f0); padding: 25px; border-radius: 10px; border-left: 5px solid #28a745; box-shadow: 0 2px 4px rgba(40, 167, 69, 0.1);">
+      <div style="margin-bottom: 15px; color: #155724; font-size: 14px;">
+        <strong>📅 Yanıt Tarihi:</strong> {{ request.response_date.strftime('%d %B %Y, %H:%M') if request.response_date else 'Bilinmiyor' }}
+        {% if request.responded_by %}
+          <br><strong>👤 Yanıtlayan:</strong> {{ request.responded_by }}
+        {% endif %}
+      </div>
+      <div style="color: #155724; line-height: 1.6; font-size: 16px;">
+        {{ request.admin_response | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div style="margin-bottom: 30px;">
+    <h3 style="color: #495057; margin-bottom: 15px; font-size: 20px;">
+      💬 Admin Yanıtı
+    </h3>
+    <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; text-align: center;">
+      <div style="color: #856404; font-size: 16px;">
+        ⏳ Bu veri isteği henüz yanıtlanmamış.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  
+  <!-- Admin İşlemleri (Sadece admin görür) -->
+  {% if is_admin %}
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6;">
+    <h4 style="color: #495057; margin-bottom: 15px;">🔧 Admin İşlemleri</h4>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="{{ url_for('data_requests.admin') }}" 
+         style="background: #007bff; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 14px;">
+        ⚙️ Admin Paneli
+      </a>
+      
+      {% if request.is_active %}
+      <form method="post" action="{{ url_for('data_requests.admin') }}" style="display: inline;">
+        <input type="hidden" name="request_id" value="{{ request._id }}">
+        <button type="submit" name="action" value="deactivate" 
+                style="background: #ffc107; color: #000; border: none; padding: 8px 16px; border-radius: 5px; font-size: 14px; cursor: pointer;">
+          📴 Pasif Yap
+        </button>
+      </form>
+      {% else %}
+      <form method="post" action="{{ url_for('data_requests.admin') }}" style="display: inline;">
+        <input type="hidden" name="request_id" value="{{ request._id }}">
+        <button type="submit" name="action" value="activate" 
+                style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 5px; font-size: 14px; cursor: pointer;">
+          ✅ Aktif Yap
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  
+</div>
+
+<!-- Geri dön butonu -->
+<div style="text-align: center; margin-top: 30px;">
+  <a href="{{ url_for('data_requests.index') }}" 
+     style="background: #6c757d; color: white; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; display: inline-block;">
+    ← Veri İstekleri Listesi
+  </a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,9 @@
+{% ckan_extends %}
+
+{% block header_site_navigation_tabs %}
+  {# Orijinal menüler #}
+  {{ super() }}
+  
+  {# Data Requests menüsü ekle #}
+  {{ h.build_nav_main(('data_requests.index', _('Veri İstekleri'), ['data_requests'])) }}
+{% endblock %}

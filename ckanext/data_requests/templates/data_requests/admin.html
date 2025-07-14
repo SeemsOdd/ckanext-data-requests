@@ -1,0 +1,185 @@
+{% extends "page.html" %}
+
+{% block subtitle %}Veri İstekleri Yönetimi{% endblock %}
+
+{% block breadcrumb_content %}
+  <li>{% link_for _('Ana Sayfa'), named_route='home.index' %}</li>
+  <li>{% link_for _('Veri İstekleri'), named_route='data_requests.index' %}</li>
+  <li class="active">{% link_for _('Yönetim'), named_route='data_requests.admin' %}</li>
+{% endblock %}
+
+{% block primary_content %}
+<h1>Veri İstekleri Yönetimi</h1>
+
+<!-- Sıralama ve İstatistikler -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+  <div>
+    <strong style="color: #495057;">Toplam İstek: {{ requests|length }}</strong>
+    <span style="margin-left: 20px; color: #28a745;">
+      Aktif: {{ requests|selectattr('is_active', 'equalto', true)|list|length }}
+    </span>
+    <span style="margin-left: 15px; color: #dc3545;">
+      Pasif: {{ requests|selectattr('is_active', 'equalto', false)|list|length }}
+    </span>
+    <span style="margin-left: 15px; color: #ffc107;">
+      Beklemede: {{ requests|selectattr('status', 'equalto', 'pending')|list|length }}
+    </span>
+  </div>
+  
+  <!-- Admin Sıralama -->
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <label style="font-weight: bold; color: #495057;">Sırala:</label>
+    <select onchange="window.location.href='{{ url_for('data_requests.admin') }}?sort=' + this.value" 
+            style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background: white;">
+      <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>En Yeni</option>
+      <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>En Eski</option>
+      <option value="recently_updated" {% if current_sort == 'recently_updated' %}selected{% endif %}>Son Güncellenen</option>
+      <option value="status_pending" {% if current_sort == 'status_pending' %}selected{% endif %}>Bekleyen Önce</option>
+      <option value="organization" {% if current_sort == 'organization' %}selected{% endif %}>Organizasyon</option>
+      <option value="title_asc" {% if current_sort == 'title_asc' %}selected{% endif %}>Başlık (A-Z)</option>
+      <option value="title_desc" {% if current_sort == 'title_desc' %}selected{% endif %}>Başlık (Z-A)</option>
+    </select>
+  </div>
+</div>
+
+<style>
+.status-pending { background: #ffc107; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+.status-reviewing { background: #17a2b8; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+.status-completed { background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+.status-rejected { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+.admin-card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: white; }
+.response-form { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-top: 15px; }
+</style>
+
+{% if requests %}
+  {% for req in requests %}
+  <div class="admin-card">
+    <!-- Üst bilgiler -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <div>
+        <h3 style="margin: 0;">
+          <a href="{{ url_for('data_requests.detail', request_id=req._id) }}" 
+             style="color: #0066cc; text-decoration: none;">
+            {{ req.title or 'Başlıksız İstek' }}
+          </a>
+        </h3>
+        <small style="color: #666;">
+          ID: {{ req._id }} | Kullanıcı: {{ req.username }} | 
+          {% if req.organization %}Hedef Birim: {{ req.organization }} | {% endif %}
+          Tarih: {{ req.request_date.strftime('%d.%m.%Y %H:%M') if req.request_date else 'N/A' }}
+        </small>
+      </div>
+      <div>
+        {% if req.status == 'pending' %}
+          <span class="status-pending">Beklemede</span>
+        {% elif req.status == 'reviewing' %}
+          <span class="status-reviewing">İnceleniyor</span>
+        {% elif req.status == 'completed' %}
+          <span class="status-completed">Tamamlandı</span>
+        {% elif req.status == 'rejected' %}
+          <span class="status-rejected">Reddedildi</span>
+        {% endif %}
+        
+        {% if req.is_active %}
+          <span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 5px;">Aktif</span>
+        {% else %}
+          <span style="background: #6c757d; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 5px;">Pasif</span>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- İstek içeriği -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+      <strong>İstek:</strong><br>
+      {{ req.request_text }}
+    </div>
+    
+    <!-- Mevcut admin yanıtı -->
+    {% if req.admin_response %}
+    <div style="background: #e8f5e8; padding: 15px; border-radius: 6px; border-left: 4px solid #28a745; margin-bottom: 15px;">
+      <strong>Admin Yanıtı:</strong> ({{ req.responded_by }} - {{ req.response_date.strftime('%d.%m.%Y %H:%M') if req.response_date else 'N/A' }})<br>
+      {{ req.admin_response }}
+    </div>
+    {% endif %}
+    
+    <!-- Yanıt verme formu -->
+    {% if not req.admin_response or req.status != 'completed' %}
+    <div class="response-form">
+      <form method="post">
+        <input type="hidden" name="request_id" value="{{ req._id }}">
+        <input type="hidden" name="action" value="respond">
+        
+        <div style="margin-bottom: 15px;">
+          <label><strong>Admin Yanıtı:</strong></label><br>
+          <textarea name="admin_response" rows="4" style="width: 100%; padding: 8px;" 
+                    placeholder="Veri isteğine yanıtınızı yazın...">{{ req.admin_response or '' }}</textarea>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+          <label><strong>Durum:</strong></label><br>
+          <select name="status" style="padding: 5px;">
+            <option value="pending" {% if req.status == 'pending' %}selected{% endif %}>Beklemede</option>
+            <option value="reviewing" {% if req.status == 'reviewing' %}selected{% endif %}>İnceleniyor</option>
+            <option value="completed" {% if req.status == 'completed' %}selected{% endif %}>Tamamlandı</option>
+            <option value="rejected" {% if req.status == 'rejected' %}selected{% endif %}>Reddedildi</option>
+          </select>
+        </div>
+        
+        <button type="submit" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px;">
+          {% if req.admin_response %}Yanıtı Güncelle{% else %}Yanıt Gönder{% endif %}
+        </button>
+      </form>
+    </div>
+    {% endif %}
+    
+    <!-- Hızlı durum değiştirme -->
+    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+      <strong>Hızlı İşlemler:</strong>
+      
+      <!-- Durum değiştirme -->
+      <form method="post" style="display: inline; margin-right: 10px;">
+        <input type="hidden" name="request_id" value="{{ req._id }}">
+        <input type="hidden" name="action" value="change_status">
+        <select name="status" onchange="this.form.submit()" style="padding: 3px;">
+          <option value="">Durum Değiştir</option>
+          <option value="pending">Beklemede</option>
+          <option value="reviewing">İnceleniyor</option>
+          <option value="completed">Tamamlandı</option>
+          <option value="rejected">Reddedildi</option>
+        </select>
+      </form>
+      
+      <!-- Aktif/Pasif -->
+      <form method="post" style="display: inline; margin-right: 10px;">
+        <input type="hidden" name="request_id" value="{{ req._id }}">
+        {% if req.is_active %}
+          <button type="submit" name="action" value="deactivate" 
+                  style="background: orange; color: white; border: none; padding: 5px 10px; border-radius: 4px;">
+            Pasif Yap
+          </button>
+        {% else %}
+          <button type="submit" name="action" value="activate" 
+                  style="background: green; color: white; border: none; padding: 5px 10px; border-radius: 4px;">
+            Aktif Yap
+          </button>
+        {% endif %}
+      </form>
+      
+      <!-- Silme -->
+      <form method="post" style="display: inline;" 
+            onsubmit="return confirm('Bu veri isteğini silmek istediğinizden emin misiniz?')">
+        <input type="hidden" name="request_id" value="{{ req._id }}">
+        <button type="submit" name="action" value="delete" 
+                style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px;">
+          Sil
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div style="text-align: center; padding: 40px; border: 2px dashed #ccc; border-radius: 8px; color: #666;">
+  <p style="font-size: 18px; margin: 0;">Veri isteği bulunamadı.</p>
+</div>
+{% endif %}
+{% endblock %}

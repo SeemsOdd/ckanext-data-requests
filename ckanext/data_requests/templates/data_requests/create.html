@@ -1,0 +1,109 @@
+{% extends "page.html" %}
+
+{% block subtitle %}Yeni Veri İsteği{% endblock %}
+
+{% block breadcrumb_content %}
+  <li>{% link_for _('Ana Sayfa'), named_route='home.index' %}</li>
+  <li>{% link_for _('Veri İstekleri'), named_route='data_requests.index' %}</li>
+  <li class="active">{% link_for _('Yeni İstek'), named_route='data_requests.create' %}</li>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+{{ super() }}
+.module-content {
+    padding: 1.5rem !important;
+    background-color: #0072bb !important;
+    border-top-left-radius: 5px !important;
+    border-bottom-left-radius: 5px !important;
+}
+
+.module:first-child .module-heading {
+    border-radius: 5px !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+}
+
+.module-heading {
+    padding: 0.5rem 25px !important;
+    font-size: 0.875rem !important;
+    line-height: 1.3 !important;
+    background-color: #128ede !important;
+    text-align: center !important;
+    color: white !important;
+}
+</style>
+{% endblock %}
+
+{% block secondary_content %}
+<div class="module">
+  <div class="module-content">
+    <h2 class="module-heading">Bilgilendirme</h2>
+    <div style="padding: 15px;">
+      <div style="padding: 20px;border-radius: 8px;line-height: 1.6;">
+        <p style="margin: 0;color: #8cbede;font-size: 15px;">
+          Bu alanda Sakarya Büyükşehir Belediyesi Açık Veri Portalı ile alakalı veri taleplerinizi iletebilirsiniz. 
+          Veri isteğinizin bir organizasyon ile ilişkili olduğunu düşünüyorsanız bunu belirtebilirsiniz.
+        </p>
+      </div>
+      
+      <!-- Ek İpuçları -->
+      <div style="margin-top: 20px;">
+        <h4 style="color: white;margin-bottom: 10px;font-size: 16px;">💡 İpuçları:</h4>
+        <ul style="color: #8cbede; font-size: 13px; line-height: 1.5; margin: 0; padding-left: 20px;">
+          <li>Veri isteğinizi mümkün olduğunca detaylı açıklayın</li>
+          <li>Hangi formatta veri istediğinizi belirtin (Excel, CSV, JSON vb.)</li>
+          <li>Veri kullanım amacınızı kısaca belirtin</li>
+          <li>İletişim bilgilerinizin güncel olduğundan emin olun</li>
+        </ul>
+      </div>
+      
+      <!-- İletişim Bilgisi -->
+      <div style="margin-top: 20px;padding: 15px;background: #128ede;border-radius: 6px;">
+        <h4 style="color: white; margin: 0 0 8px 0; font-size: 14px;">📞 İletişim</h4>
+        <p style="margin: 0; color: white; font-size: 13px;">
+          Veri istekleriniz hakkında sorularınız için sistem yöneticileri ile iletişime geçebilirsiniz.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block primary_content %}
+<h1>Yeni Veri İsteği</h1>
+
+{% if user %}
+  <div style="margin-bottom: 20px; padding: 10px; background-color: #e8f5e8; border-radius: 5px;">
+    <p><strong>Kullanıcı:</strong> {{ user.display_name or user.name }}</p>
+  </div>
+{% endif %}
+
+<form method="post" style="max-width: 500px;">
+  <div style="margin-bottom: 15px;">
+    <label>Başlık:</label><br>
+    <input type="text" name="title" value="{{ data.title if data else '' }}" style="width: 100%; padding: 5px;" required placeholder="Veri isteğiniz için kısa bir başlık yazın...">
+    {% if errors and errors.title %}<div style="color: red;">{{ errors.title }}</div>{% endif %}
+  </div>
+  
+  <div style="margin-bottom: 15px;">
+    <label>Hedef Organizasyon/Birim:</label><br>
+    <select name="organization_id" style="width: 100%; padding: 5px;" required>
+      <option value="">Organizasyon seçin...</option>
+      {% for org in organizations %}
+      <option value="{{ org.id }}" {% if data and data.organization_id == org.id %}selected{% endif %}>{{ org.title or org.name }}</option>
+      {% endfor %}
+    </select>
+    {% if errors and errors.organization_id %}<div style="color: red;">{{ errors.organization_id }}</div>{% endif %}
+  </div>
+  
+  <div style="margin-bottom: 15px;">
+    <label>Veri İsteği Açıklaması:</label><br>
+    <textarea name="request_text" rows="5" style="width: 100%; padding: 5px;" required placeholder="Hangi veri setine ihtiyacınız var? Lütfen detaylı açıklama yapın...">{{ data.request_text if data else '' }}</textarea>
+    {% if errors and errors.request_text %}<div style="color: red;">{{ errors.request_text }}</div>{% endif %}
+  </div>
+  
+  <button type="submit" style="padding: 10px 20px; background: #0066cc; color: white; border: none;">Gönder</button>
+  <a href="{{ url_for('data_requests.index') }}" style="margin-left: 10px;">İptal</a>
+</form>
+{% endblock %}

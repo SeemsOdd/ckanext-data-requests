@@ -1,0 +1,235 @@
+{% extends "page.html" %}
+
+{% block subtitle %}Veri İstekleri{% endblock %}
+
+{% block breadcrumb_content %}
+  <li>{% link_for _('Ana Sayfa'), named_route='home.index' %}</li>
+  <li class="active">{% link_for _('Veri İstekleri'), named_route='data_requests.index' %}</li>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+  .module:first-child .module-heading {
+    border-radius: 5px !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    background-color: #0072bb !important;
+    color: white !important;
+    text-align: center !important;
+  }
+
+  .btn-primary {
+    color: white !important;
+    background-color: #0072bb !important;
+  }
+
+  
+</style>
+{% endblock %}
+
+{% block secondary_content %}
+<div class="module">
+  <div class="module-content">
+    <h2 class="module-heading">İstatistikler</h2>
+    <div style="padding: 15px;">
+      <div style="text-align: center; padding: 20px; background-color: #f0f8ff; border-radius: 8px; border: 1px solid #0066cc;">
+        <div style="font-size: 32px; font-weight: bold; color: #0066cc; margin-bottom: 5px;">
+          {{ requests|length }}
+        </div>
+        <div style="color: #666; font-size: 14px;">
+          Toplam Aktif Veri İsteği
+        </div>
+      </div>
+      
+      {% if c.userobj %}
+      <div style="margin-top: 15px; text-align: center;">
+        <a href="{{ url_for('data_requests.create') }}" 
+           style="display: inline-block; padding: 12px 24px; background-color: #0072bb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          + Yeni İstek Oluştur
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block primary_content %}
+<h1>Veri İstekleri</h1>
+
+<!-- Filtreleme ve Sıralama Paneli -->
+<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #dee2e6;">
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+    
+    <!-- Organizasyon Filtresi -->
+    <div style="flex: 1; min-width: 200px;">
+      <label style="display: block; font-weight: bold; color: #495057; margin-bottom: 5px;">🏢 Organizasyon:</label>
+      <select id="organizationFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background: white;">
+        <option value="">Tüm Organizasyonlar</option>
+        {% for org in organizations %}
+        <option value="{{ org.id }}" {% if current_organization == org.id %}selected{% endif %}>
+          {{ org.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <!-- Durum Filtresi -->
+    <div style="flex: 1; min-width: 180px;">
+      <label style="display: block; font-weight: bold; color: #495057; margin-bottom: 5px;">📊 Durum:</label>
+      <select id="statusFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background: white;">
+        <option value="">Tüm Durumlar</option>
+        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>⏳ Beklemede</option>
+        <option value="reviewing" {% if current_status == 'reviewing' %}selected{% endif %}>🔍 İnceleniyor</option>
+        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>✅ Tamamlandı</option>
+        <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>❌ Reddedildi</option>
+      </select>
+    </div>
+    
+    <!-- Sıralama -->
+    <div style="flex: 1; min-width: 160px;">
+      <label style="display: block; font-weight: bold; color: #495057; margin-bottom: 5px;">📋 Sırala:</label>
+      <select id="sortFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background: white;">
+        <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>En Yeni</option>
+        <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>En Eski</option>
+        <option value="recently_updated" {% if current_sort == 'recently_updated' %}selected{% endif %}>Son Güncellenen</option>
+        <option value="title_asc" {% if current_sort == 'title_asc' %}selected{% endif %}>Başlık (A-Z)</option>
+        <option value="title_desc" {% if current_sort == 'title_desc' %}selected{% endif %}>Başlık (Z-A)</option>
+      </select>
+    </div>
+    
+    <!-- Temizle Butonu -->
+    <div style="align-self: end;">
+      <button onclick="clearFilters()" 
+              style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        🗑️ Temizle
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Sonuç Sayısı ve Yeni İstek Butonu -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+  <div>
+    <span style="color: #6c757d; font-size: 14px;">
+      <strong>{{ requests|length }} adet</strong> veri isteği bulundu
+      {% if current_organization or current_status %}
+        (filtrelenmiş)
+      {% endif %}
+    </span>
+  </div>
+  
+  <div>
+    {% if c.userobj %}
+      <!-- Giriş yapmış kullanıcı için -->
+      <a href="{{ url_for('data_requests.create') }}" class="btn btn-primary">+ Yeni Veri İsteği</a>
+    {% else %}
+      <!-- Giriş yapmamış kullanıcı için -->
+      <div style="padding: 10px; background-color: #f0f0f0; border-radius: 5px; display: inline-block;">
+        <span><strong>Bilgi:</strong> Veri isteği oluşturmak için <a href="{{ url_for('user.login') }}">giriş yapmalısınız</a>.</span>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Filtreleme fonksiyonu
+function applyFilters() {
+    const organization = document.getElementById('organizationFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const sort = document.getElementById('sortFilter').value;
+    
+    let url = '{{ url_for("data_requests.index") }}?sort=' + sort;
+    
+    if (organization) {
+        url += '&organization=' + organization;
+    }
+    if (status) {
+        url += '&status=' + status;
+    }
+    
+    window.location.href = url;
+}
+
+// Temizleme fonksiyonu
+function clearFilters() {
+    window.location.href = '{{ url_for("data_requests.index") }}';
+}
+
+// Event listeners
+document.getElementById('organizationFilter').addEventListener('change', applyFilters);
+document.getElementById('statusFilter').addEventListener('change', applyFilters);
+document.getElementById('sortFilter').addEventListener('change', applyFilters);
+</script>
+
+<div style="margin-top: 20px;">
+  {% if requests %}
+    {% for req in requests %}
+    <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 15px; background-color: #f9f9f9;">
+      <!-- Üst kısım: Başlık, Durum ve Tarih -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: bold;">
+            <a href="{{ url_for('data_requests.detail', request_id=req._id) }}" 
+               style="color: #0066cc; text-decoration: none;">
+              {{ req.title or 'Başlıksız İstek' }}
+            </a>
+          </h3>
+          <!-- Durum etiketi -->
+          <div style="margin-top: 5px;">
+            {% if req.status == 'pending' %}
+              <span style="background: #ffc107; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 12px;">Beklemede</span>
+            {% elif req.status == 'reviewing' %}
+              <span style="background: #17a2b8; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">İnceleniyor</span>
+            {% elif req.status == 'completed' %}
+              <span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">Tamamlandı</span>
+            {% elif req.status == 'rejected' %}
+              <span style="background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">Reddedildi</span>
+            {% endif %}
+          </div>
+        </div>
+        <span style="color: #666; font-size: 14px; white-space: nowrap; margin-left: 20px;">
+          {{ req.request_date.strftime('%d.%m.%Y') if req.request_date else 'N/A' }}
+        </span>
+      </div>
+      
+      <!-- İstek açıklaması -->
+      <div style="color: #333; line-height: 1.5; margin-bottom: 15px;">
+        {% if req.request_text|length > 200 %}
+          {{ req.request_text[:200] }}...
+        {% else %}
+          {{ req.request_text }}
+        {% endif %}
+      </div>
+      
+      <!-- Yanıt durumu -->
+      {% if req.admin_response %}
+      <div style="background: #d4edda; color: #155724; padding: 10px 15px; border-radius: 6px; border-left: 4px solid #28a745; margin-bottom: 15px; font-size: 14px;">
+        <strong>✅ Bu istek yanıtlandı</strong> - Detayları görmek için başlığa tıklayın
+      </div>
+      {% else %}
+      <div style="background: #fff3cd; color: #856404; padding: 10px 15px; border-radius: 6px; border-left: 4px solid #ffc107; margin-bottom: 15px; font-size: 14px;">
+        <strong>⏳ Henüz yanıtlanmadı</strong>
+      </div>
+      {% endif %}
+      
+      <!-- Kullanıcı bilgisi -->
+      <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>İsteyen:</strong> {{ req.username }}
+            {% if req.organization_name %}
+              <br><strong>Hedef Birim:</strong> {{ req.organization_name }}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="text-align: center; padding: 40px; border: 2px dashed #ccc; border-radius: 8px; color: #666;">
+      <p style="font-size: 18px; margin: 0;">Henüz aktif veri isteği bulunmuyor.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
