@@ -8,6 +8,19 @@
   <li class="active">{{ request.title or _('Veri İsteği Detayı') }}</li>
 {% endblock %}
 
+{% block head_extras %}
+<style>
+{{ super() }}
+.main .primary { padding: 20px !important; }
+@media (min-width: 768px) {
+.wrapper:before { display: none }
+.col-md-3 { flex: 0 !important; }
+.col-md-9 { flex: 1 !important; }
+}
+
+</style>
+{% endblock %}
+
 {% block primary_content %}
 <div style="margin-bottom: 20px;">
   <a href="{{ url_for('data_requests.index') }}" style="color: #0066cc; text-decoration: none;">
