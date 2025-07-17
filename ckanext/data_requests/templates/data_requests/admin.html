@@ -8,6 +8,9 @@
   <li class="active">{% link_for _('Yönetim'), named_route='data_requests.admin' %}</li>
 {% endblock %}
 
+{% block secondary_content %}
+{% endblock %}
+
 {% block primary_content %}
 <h1>Veri İstekleri Yönetimi</h1>
 
@@ -49,6 +52,13 @@
 .status-rejected { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
 .admin-card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: white; }
 .response-form { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-top: 15px; }
+.main .primary { padding: 20px; !important }
+@media (min-width: 768px) {
+.wrapper:before { display: none !important; }
+.col-md-3 { flex: 0 !important; }
+.col-md-9 { flex: 1 !important; }
+}
+
 </style>
 
 {% if requests %}
